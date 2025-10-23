@@ -2,6 +2,7 @@
 import json
 import os
 import sqlite3
+import threading
 import traceback
 
 from pathlib import Path
@@ -59,11 +60,16 @@ def load_agent_cards():
     return card_uris, agent_cards
 
 
+def _run_mcp(transport: str, mcp: FastMCP):
+    # Run MCP server (blocking)
+    mcp.run(transport=transport)
+
+
 def serve(host, port, transport):  # noqa: PLR0915
     """Run Agent Cards MCP server (SSE) and start a separate HTTP facade app."""
     logger.info('Starting Agent Cards MCP Server (no Google)')
 
-    # 1) Start MCP in background (non-blocking)
+    # 1) Define MCP and register tools/resources
     mcp = FastMCP('agent-cards', host=host, port=port)
     card_uris, agent_cards = load_agent_cards()
     df = pd.DataFrame({'card_uri': card_uris, 'agent_card': agent_cards})
@@ -156,10 +162,10 @@ def serve(host, port, transport):  # noqa: PLR0915
             ).to_list()
         }
 
-    # Start MCP in a non-blocking way (SSE)
-    mcp.run(transport=transport, blocking=False)
+    # 2) Start MCP in a separate thread (blocking run)
+    threading.Thread(target=_run_mcp, args=(transport, mcp), daemon=True).start()
 
-    # 2) Start HTTP facade as separate app on the same host:port+1
+    # 3) Start HTTP facade as standalone FastAPI on port+1
     http_app = FastAPI(title='MCP HTTP Facade')
 
     @http_app.post('/http/tools/call')
@@ -191,8 +197,7 @@ def serve(host, port, transport):  # noqa: PLR0915
         return {'contents': [{ 'text': json.dumps({'agent_card': data}) }]}
 
     logger.info(
-        f'Agent cards MCP Server at {host}:{port} and transport {transport} (no Google)'
+        f'Agent cards MCP Server at {host}:{port} ({transport}) + HTTP facade at {host}:{port+1}'
     )
 
-    # Run HTTP facade on port+1 to avoid conflicting with MCP server port
     uvicorn.run(http_app, host=host, port=port + 1)
