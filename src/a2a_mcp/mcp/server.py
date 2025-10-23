@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 import httpx
+import uvicorn
 from fastapi import FastAPI, HTTPException
 
 from mcp.server.fastmcp import FastMCP
@@ -59,10 +60,10 @@ def load_agent_cards():
 
 
 def serve(host, port, transport):  # noqa: PLR0915
-    """Run Agent Cards MCP server (SSE) and expose simple HTTP helpers."""
+    """Run Agent Cards MCP server (SSE) and start a separate HTTP facade app."""
     logger.info('Starting Agent Cards MCP Server (no Google)')
 
-    # 1) Start MCP (SSE or stdio)
+    # 1) Start MCP in background (non-blocking)
     mcp = FastMCP('agent-cards', host=host, port=port)
     card_uris, agent_cards = load_agent_cards()
     df = pd.DataFrame({'card_uri': card_uris, 'agent_card': agent_cards})
@@ -155,10 +156,13 @@ def serve(host, port, transport):  # noqa: PLR0915
             ).to_list()
         }
 
-    # 2) Expose small HTTP facade when running with SSE
-    app = FastAPI(title='MCP HTTP Facade')
+    # Start MCP in a non-blocking way (SSE)
+    mcp.run(transport=transport, blocking=False)
 
-    @app.post('/http/tools/call')
+    # 2) Start HTTP facade as separate app on the same host:port+1
+    http_app = FastAPI(title='MCP HTTP Facade')
+
+    @http_app.post('/http/tools/call')
     def http_call_tool(body: dict):
         name = body.get('name')
         arguments = body.get('arguments', {})
@@ -170,11 +174,11 @@ def serve(host, port, transport):  # noqa: PLR0915
             return {'content': [{ 'text': json.dumps(query_travel_data(**arguments)) }]}
         raise HTTPException(status_code=404, detail='Unknown tool')
 
-    @app.get('/http/resources/list')
+    @http_app.get('/http/resources/list')
     def http_list_resources():
         return {'contents': [{ 'text': json.dumps({'agent_cards': df['card_uri'].to_list()}) }]}
 
-    @app.get('/http/resources/{card_name}')
+    @http_app.get('/http/resources/{card_name}')
     def http_get_resource(card_name: str):
         data = (
             df.loc[
@@ -189,5 +193,6 @@ def serve(host, port, transport):  # noqa: PLR0915
     logger.info(
         f'Agent cards MCP Server at {host}:{port} and transport {transport} (no Google)'
     )
-    # Run both MCP (SSE) and the HTTP facade in the same process
-    mcp.run(transport=transport, http_app=app)
+
+    # Run HTTP facade on port+1 to avoid conflicting with MCP server port
+    uvicorn.run(http_app, host=host, port=port + 1)
