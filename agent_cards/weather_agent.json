@@ -1,0 +1,24 @@
+# Weather Task Agent (A2A)
+
+{
+  "name": "WeatherAgent",
+  "version": "1.0.0",
+  "description": "Task agent that checks current weather for a given city using Open-Meteo (no API key)",
+  "capabilities": {
+    "streaming": true,
+    "push_notifications": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "weather_query",
+      "name": "Query Weather",
+      "description": "Returns current weather for a city. Input text like: 'clima em São Paulo'",
+      "tags": ["weather", "open-meteo", "public-api"]
+    }
+  ],
+  "endpoints": {
+    "rpc": "/a2a"
+  }
+}
