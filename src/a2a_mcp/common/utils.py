@@ -2,8 +2,6 @@
 import logging
 import os
 
-import google.generativeai as genai
-
 from a2a_mcp.common.types import ServerConfig
 
 
@@ -11,12 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 def init_api_key():
-    """Initialize the API key for Google Generative AI."""
-    if not os.getenv('GOOGLE_API_KEY'):
-        logger.error('GOOGLE_API_KEY is not set')
-        raise ValueError('GOOGLE_API_KEY is not set')
-
-    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+    """No-op: GOOGLE_API_KEY removed. Maintained for compatibility."""
+    if os.getenv('GOOGLE_API_KEY'):
+        logger.warning('GOOGLE_API_KEY is set but not used. Proceeding without Google services.')
 
 
 def config_logging():
@@ -29,7 +24,6 @@ def config_logging():
 
 def config_logger(logger):
     """Logger specific config, avoiding clutter in enabling all loggging."""
-    # TODO: replace with env
     logger.setLevel(logging.INFO)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
