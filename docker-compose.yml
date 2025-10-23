@@ -31,7 +31,7 @@ services:
       - redis
     networks:
       - multi-agent-network
-    command: python src/main.py
+    command: python src/a2a_main.py
 
 volumes:
   redis_data:
