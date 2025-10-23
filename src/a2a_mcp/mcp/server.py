@@ -6,9 +6,9 @@ import traceback
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import httpx
+from fastapi import FastAPI, HTTPException
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.utilities.logging import get_logger
@@ -20,11 +20,6 @@ SQLLITE_DB = 'travel_agency.db'
 
 
 def load_agent_cards():
-    """Loads agent card data from JSON files within a specified directory.
-
-    Returns:
-        (card_uris, agent_cards): lists with resource URIs and agent card dicts
-    """
     card_uris = []
     agent_cards = []
     dir_path = Path(AGENT_CARDS_DIR)
@@ -39,7 +34,6 @@ def load_agent_cards():
     for filename in os.listdir(AGENT_CARDS_DIR):
         if filename.lower().endswith('.json'):
             file_path = dir_path / filename
-
             if file_path.is_file():
                 logger.info(f'Reading file: {filename}')
                 try:
@@ -55,7 +49,7 @@ def load_agent_cards():
                     logger.error(f'Error reading file {filename}: {e}.')
                 except Exception as e:
                     logger.error(
-                        f'An unexpected error occurred processing {filename}: {e}',
+                        f'Unexpected error processing {filename}: {e}',
                         exc_info=True,
                     )
     logger.info(
@@ -65,16 +59,11 @@ def load_agent_cards():
 
 
 def serve(host, port, transport):  # noqa: PLR0915
-    """Initializes and runs the Agent Cards MCP server (no Google dependencies).
-
-    Args:
-        host: The hostname or IP address to bind the server to.
-        port: The port number to bind the server to.
-        transport: The transport mechanism for the MCP server (e.g., 'stdio', 'sse').
-    """
+    """Run Agent Cards MCP server (SSE) and expose simple HTTP helpers."""
     logger.info('Starting Agent Cards MCP Server (no Google)')
-    mcp = FastMCP('agent-cards', host=host, port=port)
 
+    # 1) Start MCP (SSE or stdio)
+    mcp = FastMCP('agent-cards', host=host, port=port)
     card_uris, agent_cards = load_agent_cards()
     df = pd.DataFrame({'card_uri': card_uris, 'agent_card': agent_cards})
 
@@ -85,12 +74,10 @@ def serve(host, port, transport):  # noqa: PLR0915
     def find_agent_simple(query: str) -> dict:
         q = (query or '').lower()
         if 'clima' in q or 'weather' in q:
-            # Prefer any card with name containing 'Weather'
-            for i, row in df.iterrows():
+            for _, row in df.iterrows():
                 name = row['agent_card'].get('name', '').lower()
                 if 'weather' in name:
                     return row['agent_card']
-        # fallback: first card
         return df.iloc[0]['agent_card'] if len(df) else {}
 
     @mcp.tool(
@@ -99,7 +86,6 @@ def serve(host, port, transport):  # noqa: PLR0915
     )
     def get_weather(city: str) -> dict:
         try:
-            # Geocoding
             geocode_url = 'https://geocoding-api.open-meteo.com/v1/search'
             params = {'name': city, 'count': 1, 'language': 'pt', 'format': 'json'}
             r = httpx.get(geocode_url, params=params, timeout=20.0)
@@ -110,12 +96,11 @@ def serve(host, port, transport):  # noqa: PLR0915
             res = data['results'][0]
             lat, lon = res['latitude'], res['longitude']
 
-            # Weather
             weather_url = 'https://api.open-meteo.com/v1/forecast'
             wparams = {
                 'latitude': lat,
                 'longitude': lon,
-                'current': 'temperature_2m,wind_speed_10m,weather_code',
+                'current': 'temperature_2m,wind_speed_10m,weather_code,wind_speed_10m',
                 'timezone': 'auto',
             }
             wr = httpx.get(weather_url, params=wparams, timeout=20.0)
@@ -135,12 +120,9 @@ def serve(host, port, transport):  # noqa: PLR0915
 
     @mcp.tool()
     def query_travel_data(query: str) -> dict:
-        """ Runs a SELECT query against the SQLite travel database. """
         logger.info(f'Query sqllite : {query}')
-
         if not query or not query.strip().upper().startswith('SELECT'):
             raise ValueError(f'In correct query {query}')
-
         try:
             with sqlite3.connect(SQLLITE_DB) as conn:
                 conn.row_factory = sqlite3.Row
@@ -160,29 +142,52 @@ def serve(host, port, transport):  # noqa: PLR0915
 
     @mcp.resource('resource://agent_cards/list', mime_type='application/json')
     def get_agent_cards() -> dict:
-        resources = {}
-        logger.info('Starting read resources')
-        resources['agent_cards'] = df['card_uri'].to_list()
-        return resources
+        return {'agent_cards': df['card_uri'].to_list()}
 
-    @mcp.resource(
-        'resource://agent_cards/{card_name}', mime_type='application/json'
-    )
+    @mcp.resource('resource://agent_cards/{card_name}', mime_type='application/json')
     def get_agent_card(card_name: str) -> dict:
-        resources = {}
-        logger.info(
-            f'Starting read resource resource://agent_cards/{card_name}'
-        )
-        resources['agent_card'] = (
+        return {
+            'agent_card': (
+                df.loc[
+                    df['card_uri'] == f'resource://agent_cards/{card_name}',
+                    'agent_card',
+                ]
+            ).to_list()
+        }
+
+    # 2) Expose small HTTP facade when running with SSE
+    app = FastAPI(title='MCP HTTP Facade')
+
+    @app.post('/http/tools/call')
+    def http_call_tool(body: dict):
+        name = body.get('name')
+        arguments = body.get('arguments', {})
+        if name == 'find_agent_simple':
+            return {'content': [{ 'text': json.dumps(find_agent_simple(**arguments)) }]}
+        if name == 'get_weather':
+            return {'content': [{ 'text': json.dumps(get_weather(**arguments)) }]}
+        if name == 'query_travel_data':
+            return {'content': [{ 'text': json.dumps(query_travel_data(**arguments)) }]}
+        raise HTTPException(status_code=404, detail='Unknown tool')
+
+    @app.get('/http/resources/list')
+    def http_list_resources():
+        return {'contents': [{ 'text': json.dumps({'agent_cards': df['card_uri'].to_list()}) }]}
+
+    @app.get('/http/resources/{card_name}')
+    def http_get_resource(card_name: str):
+        data = (
             df.loc[
                 df['card_uri'] == f'resource://agent_cards/{card_name}',
                 'agent_card',
             ]
         ).to_list()
-
-        return resources
+        if not data:
+            raise HTTPException(status_code=404, detail='Card not found')
+        return {'contents': [{ 'text': json.dumps({'agent_card': data}) }]}
 
     logger.info(
         f'Agent cards MCP Server at {host}:{port} and transport {transport} (no Google)'
     )
-    mcp.run(transport=transport)
+    # Run both MCP (SSE) and the HTTP facade in the same process
+    mcp.run(transport=transport, http_app=app)
