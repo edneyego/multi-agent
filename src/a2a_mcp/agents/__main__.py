@@ -21,7 +21,6 @@ from a2a.types import AgentCard
 from a2a_mcp.common import prompts
 from a2a_mcp.common.agent_executor import GenericAgentExecutor
 from adk_travel_agent import TravelAgent
-from langgraph_planner_agent import LangGraphPlannerAgent
 from orchestrator_agent import OrchestratorAgent
 from weather_agent import WeatherAgent
 
@@ -34,8 +33,6 @@ def get_agent(agent_card: AgentCard):
     try:
         if agent_card.name == 'Orchestrator Agent':
             return OrchestratorAgent()
-        if agent_card.name == 'Langraph Planner Agent':
-            return LangGraphPlannerAgent()
         if agent_card.name == 'WeatherAgent':
             return WeatherAgent()
         if agent_card.name == 'Air Ticketing Agent':
