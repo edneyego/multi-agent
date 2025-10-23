@@ -11,7 +11,6 @@ from a2a.types import (
 )
 from a2a_mcp.common import prompts
 from a2a_mcp.common.base_agent import BaseAgent
-from a2a_mcp.common.utils import init_api_key
 from a2a_mcp.common.workflow import Status, WorkflowGraph, WorkflowNode
 from google import genai
 
@@ -23,7 +22,6 @@ class OrchestratorAgent(BaseAgent):
     """Orchestrator Agent."""
 
     def __init__(self):
-        init_api_key()
         super().__init__(
             agent_name='Orchestrator Agent',
             description='Facilitate inter agent communication',

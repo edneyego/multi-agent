@@ -9,7 +9,7 @@ from typing import Any
 
 from a2a_mcp.common.agent_runner import AgentRunner
 from a2a_mcp.common.base_agent import BaseAgent
-from a2a_mcp.common.utils import get_mcp_server_config, init_api_key
+from a2a_mcp.common.utils import get_mcp_server_config
 from google.adk.agents import Agent
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
@@ -24,7 +24,6 @@ class TravelAgent(BaseAgent):
     """Travel Agent backed by ADK."""
 
     def __init__(self, agent_name: str, description: str, instructions: str):
-        init_api_key()
 
         super().__init__(
             agent_name=agent_name,

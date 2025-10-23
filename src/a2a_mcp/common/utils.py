@@ -8,11 +8,6 @@ from a2a_mcp.common.types import ServerConfig
 logger = logging.getLogger(__name__)
 
 
-def init_api_key():
-    """No-op: GOOGLE_API_KEY removed. Maintained for compatibility."""
-    if os.getenv('GOOGLE_API_KEY'):
-        logger.warning('GOOGLE_API_KEY is set but not used. Proceeding without Google services.')
-
 
 def config_logging():
     """Configure basic logging."""
