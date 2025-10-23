@@ -9,19 +9,23 @@ class MCPRegistry:
         self.port = port
 
     async def find_agent_simple(self, query: str) -> Dict[str, Any]:
-        url = f"http://{self.host}:{self.port}/tools/call"
+        # Use the new HTTP facade provided by the MCP server when running SSE
+        url = f"http://{self.host}:{self.port}/http/tools/call"
         payload = {"name": "find_agent_simple", "arguments": {"query": query}}
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             r = await client.post(url, json=payload)
             r.raise_for_status()
             data = r.json()
-            # fastMCP returns content array with text
-            return json.loads(data["content"][0]["text"]) if "content" in data else data
+            return json.loads(data.get("content", [{}])[0].get("text", "{}")) or data
 
 
 class A2AToolFactory:
     def create_tool_for_card(self, agent_card: Dict[str, Any]) -> Callable[[str], Awaitable[Any]]:
-        rpc_url = agent_card.get("url", "").rstrip("/") + "/a2a"
+        # Validate url field
+        base_url = (agent_card.get("url") or "").strip()
+        if not (base_url.startswith("http://") or base_url.startswith("https://")):
+            raise ValueError(f"Invalid agent card url: {base_url}")
+        rpc_url = base_url.rstrip("/") + "/a2a"
 
         async def tool_call(user_text: str):
             payload = {
