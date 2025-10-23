@@ -49,6 +49,18 @@ async def init_session(host, port, transport):
         )
 
 
+def _normalize_resource_arg(arg: str) -> str:
+    """Accept both bare names and full URIs for resources."""
+    if not arg:
+        return ''
+    if arg == 'list':
+        return 'resource://agent_cards/list'
+    if arg.startswith('resource://'):
+        return arg
+    # treat as card name
+    return f'resource://agent_cards/{arg}'
+
+
 async def find_agent_simple(session: ClientSession, query) -> CallToolResult:
     logger.info(f"Calling 'find_agent_simple' with query: '{query[:50]}...'")
     return await session.call_tool(
@@ -57,14 +69,9 @@ async def find_agent_simple(session: ClientSession, query) -> CallToolResult:
     )
 
 
-async def read_cards(session: ClientSession) -> ReadResourceResult:
-    logger.info('Reading resource list of agent cards')
-    return await session.read_resource('resource://agent_cards/list')
-
-
-async def get_card(session: ClientSession, name: str) -> ReadResourceResult:
-    logger.info(f'Reading agent card: {name}')
-    return await session.read_resource(f'resource://agent_cards/{name}')
+async def read_resource(session: ClientSession, resource_uri: str) -> ReadResourceResult:
+    logger.info(f'Reading resource: {resource_uri}')
+    return await session.read_resource(resource_uri)
 
 
 async def get_weather(session: ClientSession, city: str) -> CallToolResult:
@@ -90,10 +97,8 @@ async def main(host, port, transport, query, resource, tool, city):
             data = json.loads(result.content[0].text)
             logger.info(json.dumps(data, indent=2))
         if resource:
-            if resource == 'list':
-                result = await read_cards(session)
-            else:
-                result = await get_card(session, resource)
+            resource_uri = _normalize_resource_arg(resource)
+            result = await read_resource(session, resource_uri)
             data = json.loads(result.contents[0].text)
             logger.info(json.dumps(data, indent=2))
         if tool:
@@ -112,7 +117,7 @@ async def main(host, port, transport, query, resource, tool, city):
 @click.option('--port', default='10100', help='MCP Port')
 @click.option('--transport', default='sse', help='MCP Transport (sse|stdio)')
 @click.option('--find_agent', help='Query to find an agent (simple matcher)')
-@click.option('--resource', help="Agent card resource name (use 'list' or a card name)")
+@click.option('--resource', help="Resource: 'list', card name, or full URI 'resource://agent_cards/...' ")
 @click.option('--tool_name', type=click.Choice(['weather', 'query_db']), help='Tool to execute')
 @click.option('--city', default='São Paulo', help='City for weather tool')
 def cli(host, port, transport, find_agent, resource, tool_name, city):
