@@ -4,18 +4,23 @@
   "name": "WeatherAgent",
   "version": "1.0.0",
   "description": "Task agent that checks current weather for a given city using Open-Meteo (no API key)",
+  "url": "http://localhost:10110/",
   "capabilities": {
     "streaming": true,
     "push_notifications": true
   },
-  "defaultInputModes": ["text"],
-  "defaultOutputModes": ["text"],
+  "defaultInputModes": ["text", "text/plain"],
+  "defaultOutputModes": ["text", "text/plain"],
   "skills": [
     {
       "id": "weather_query",
       "name": "Query Weather",
       "description": "Returns current weather for a city. Input text like: 'clima em São Paulo'",
-      "tags": ["weather", "open-meteo", "public-api"]
+      "tags": ["weather", "open-meteo", "public-api"],
+      "examples": [
+        "clima em São Paulo",
+        "weather in London"
+      ]
     }
   ],
   "endpoints": {
