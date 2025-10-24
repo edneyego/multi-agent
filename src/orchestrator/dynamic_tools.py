@@ -65,33 +65,58 @@ class A2AToolFactory:
         rpc_url = base_url.rstrip("/") 
 
         async def tool_call(user_text: str):
-            # Use A2A SDK's expected method and params shape
-            payload = {
-                "jsonrpc": "2.0",
-                "id": "1",
-                "method": "send_message",
-                "params": {
-                    "message": {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": user_text}
-                        ]
+            # Use A2A SDK's expected method name and params
+            payloads = [
+                {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": user_text}
+                            ]
+                        },
+                        "stream": False
                     },
-                    "stream": False
                 },
-            }
+                {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "message",
+                    "params": {
+                        "message": {"content": {"type": "text", "text": user_text}}
+                    },
+                },
+            ]
+            last_error = None
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
-                    r = await client.post(rpc_url, json=payload)
-                    r.raise_for_status()
-                    result = r.json()
-                    logger.info(f"Agent response: {result}")
-                    return result
+                    for payload in payloads:
+                        try:
+                            logger.info(f"Trying A2A call to {rpc_url} with method={payload['method']}")
+                            r = await client.post(rpc_url, json=payload)
+                            r.raise_for_status()
+                            result = r.json()
+                            if result.get("error", {}).get("code") == -32601:
+                                # Try next method shape
+                                last_error = result
+                                logger.warning(f"Method not found for {payload['method']}, trying fallback...")
+                                continue
+                            logger.info(f"Agent response: {result}")
+                            return result
+                        except httpx.HTTPStatusError as he:
+                            last_error = {"error": f"HTTP {he.response.status_code}: {he.response.text}"}
+                            logger.error(f"HTTP error calling agent: {last_error}")
+                            break
             except httpx.ConnectError:
                 logger.error(f"Could not connect to agent at {rpc_url}. Is the agent running?")
                 return {"error": f"Could not connect to agent at {rpc_url}. Please ensure the agent is running."}
             except Exception as e:
                 logger.error(f"Error calling agent: {e}")
                 return {"error": f"Error calling agent: {str(e)}"}
+            # If reached here, both attempts failed
+            return last_error or {"error": "Unknown error calling agent"}
 
         return tool_call
