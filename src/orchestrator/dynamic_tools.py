@@ -65,12 +65,19 @@ class A2AToolFactory:
         rpc_url = base_url.rstrip("/") 
 
         async def tool_call(user_text: str):
+            # Use A2A SDK's expected method and params shape
             payload = {
                 "jsonrpc": "2.0",
                 "id": "1",
-                "method": "message",
+                "method": "send_message",
                 "params": {
-                    "message": {"content": {"type": "text", "text": user_text}}
+                    "message": {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": user_text}
+                        ]
+                    },
+                    "stream": False
                 },
             }
             try:
