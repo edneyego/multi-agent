@@ -23,4 +23,6 @@ MCP_PORT=${MCP_PORT:-10100}
 echo "Starting MCP Server on $MCP_HOST:$MCP_PORT"
 echo "HTTP Facade will be available on $MCP_HOST:$((MCP_PORT + 1))"
 
-uv run --env-file .env python -m a2a_mcp --run mcp-server --host "$MCP_HOST" --port "$MCP_PORT" --transport sse
+#uv run --env-file .env python -m a2a_mcp --run mcp-server --host "$MCP_HOST" --port "$MCP_PORT" --transport sse
+
+uv run --env-file .env a2a-mcp --run mcp-server --host "$MCP_HOST" --port "$MCP_PORT" --transport sse

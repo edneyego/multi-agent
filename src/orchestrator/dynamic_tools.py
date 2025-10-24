@@ -81,40 +81,28 @@ class A2AToolFactory:
                     "stream": False
                 },
             }
-            # Legacy fallback used by some older handlers
-            payload_legacy = {
-                "jsonrpc": "2.0",
-                "id": "1",
-                "method": "message",
-                "params": {
-                    "message": {"content": {"type": "text", "text": user_text}}
-                },
-            }
 
             last_error = None
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
-                    for payload in (payload_send, payload_legacy):
-                        try:
-                            logger.info(f"Trying A2A call to {rpc_url} with method={payload['method']}")
-                            r = await client.post(rpc_url, json=payload)
-                            r.raise_for_status()
-                            result = r.json()
-                            # If JSON-RPC error present, decide whether to fallback
-                            if isinstance(result, dict) and result.get("error"):
-                                code = result["error"].get("code")
-                                # -32601: Method not found -> try next payload
-                                # -32602: Invalid params -> try next payload
-                                if code in (-32601, -32602):
-                                    last_error = result
-                                    logger.warning(f"A2A error code {code} for {payload['method']}, trying fallback if available...")
-                                    continue
-                            logger.info(f"Agent response: {result}")
-                            return result
-                        except httpx.HTTPStatusError as he:
-                            last_error = {"error": {"code": he.response.status_code, "message": he.response.text}}
-                            logger.error(f"HTTP error calling agent: {last_error}")
-                            break
+                    try:
+                        logger.info(f"Trying A2A call to {rpc_url} with method={payload_send['method']}")
+                        r = await client.post(rpc_url, json=payload_send)
+                        r.raise_for_status()
+                        result = r.json()
+                        # If JSON-RPC error present, decide whether to fallback
+                        if isinstance(result, dict) and result.get("error"):
+                            code = result["error"].get("code")
+                            # -32601: Method not found -> try next payload
+                            # -32602: Invalid params -> try next payload
+                            if code in (-32601, -32602):
+                                last_error = result
+                                logger.warning(f"A2A error code {code} for {payload_send['method']}, trying fallback if available...")
+                        logger.info(f"Agent response: {result}")
+                        return result
+                    except httpx.HTTPStatusError as he:
+                        last_error = {"error": {"code": he.response.status_code, "message": he.response.text}}
+                        logger.error(f"HTTP error calling agent: {last_error}")
             except httpx.ConnectError:
                 logger.error(f"Could not connect to agent at {rpc_url}. Is the agent running?")
                 return {"error": f"Could not connect to agent at {rpc_url}. Please ensure the agent is running."}

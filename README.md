@@ -41,6 +41,7 @@ uv run --env-file .env a2a-mcp --run mcp-server --transport sse
 4) (Opcional) Teste o MCP Client
 ```bash
 uv run --env-file .env src/a2a_mcp/mcp/client.py --resource list
+uv run --env-file .env src/a2a_mcp/mcp/client.py --find_agent "clima"
 uv run --env-file .env src/a2a_mcp/mcp/client.py --tool_name weather --city "São Paulo"
 ```
 
