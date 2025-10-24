@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="LangGraph Orchestrator")
-orth = Orchestrator()
+_orth = Orchestrator()
 
 class Query(BaseModel):
     text: str
@@ -20,7 +20,7 @@ class Query(BaseModel):
 async def query(q: Query):
     try:
         logger.info(f"Processing query: {q.text}")
-        result = await orch.run(q.text)
+        result = await _orth.run(q.text)
         logger.info(f"Query result: {result}")
         return {"ok": True, "result": result}
     except Exception as e:
