@@ -21,9 +21,9 @@ from a2a.types import AgentCard
 from a2a_mcp.common import prompts
 from a2a_mcp.common.agent_executor import GenericAgentExecutor
 from a2a_mcp.common.utils import config_logging
-from adk_travel_agent import TravelAgent
-from orchestrator_agent import OrchestratorAgent
-from weather_agent import WeatherAgent
+from a2a_mcp.agents.adk_travel_agent import TravelAgent
+from a2a_mcp.agents.orchestrator_agent import OrchestratorAgent
+from a2a_mcp.agents.weather_agent import WeatherAgent
 
 
 # Configure logging early
