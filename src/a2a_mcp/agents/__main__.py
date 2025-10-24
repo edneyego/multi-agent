@@ -3,7 +3,7 @@
 import json
 import logging
 import sys
-
+import traceback
 from pathlib import Path
 
 import click
@@ -31,9 +31,19 @@ config_logging()
 logger = logging.getLogger(__name__)
 
 
+def _dump_agent_card(card_path: Path, raw_json: dict):
+    try:
+        logger.info(f"AgentCard raw JSON loaded from {card_path}:")
+        logger.info(json.dumps(raw_json, indent=2, ensure_ascii=False))
+    except Exception:
+        logger.warning("Failed to pretty-print agent card JSON", exc_info=True)
+
+
 def get_agent(agent_card: AgentCard):
     """Get the agent, given an agent card."""
-    logger.info(f'Creating agent for card: {agent_card.name}')
+    logger.info(f"Creating agent for card: {agent_card.name}")
+    logger.debug(f"Agent capabilities: {getattr(agent_card, 'capabilities', None)}")
+    logger.debug(f"Agent url: {getattr(agent_card, 'url', None)}")
     try:
         if agent_card.name == 'Orchestrator Agent':
             logger.info('Creating OrchestratorAgent')
@@ -66,7 +76,7 @@ def get_agent(agent_card: AgentCard):
             logger.error(f'Unknown agent type: {agent_card.name}')
             raise ValueError(f'Unknown agent type: {agent_card.name}')
     except Exception as e:
-        logger.error(f'Error creating agent {agent_card.name}: {e}')
+        logger.error(f'Error creating agent {agent_card.name}: {e}', exc_info=True)
         raise e
 
 
@@ -88,6 +98,7 @@ def main(host, port, agent_card):
             
         with agent_card_path.open() as file:
             data = json.load(file)
+        _dump_agent_card(agent_card_path, data)
         
         agent_card_obj = AgentCard(**data)
         logger.info(f'Loaded agent card: {agent_card_obj.name}')
@@ -123,13 +134,20 @@ def main(host, port, agent_card):
 
         logger.info(f'Starting server on {host}:{port}')
         
-        # Start the server with simple configuration to avoid logging issues
+        # Hook uvicorn access/error logs to DEBUG for deep diagnostics
+        uvicorn_logger = logging.getLogger('uvicorn')
+        uvicorn_access_logger = logging.getLogger('uvicorn.access')
+        uvicorn_error_logger = logging.getLogger('uvicorn.error')
+        uvicorn_logger.setLevel(logging.DEBUG)
+        uvicorn_access_logger.setLevel(logging.DEBUG)
+        uvicorn_error_logger.setLevel(logging.DEBUG)
+        
         uvicorn.run(
             server.build(), 
             host=host, 
             port=port,
-            log_level="info",
-            access_log=False  # Disable access log to avoid format issues
+            log_level="debug",
+            access_log=True
         )
         
     except FileNotFoundError as e:
@@ -139,7 +157,7 @@ def main(host, port, agent_card):
         logger.error(f"Error: Invalid JSON in agent card file '{agent_card}': {e}")
         sys.exit(1)
     except Exception as e:
-        logger.error(f'An error occurred during server startup: {e}', exc_info=True)
+        logger.error(f'An error occurred during server startup: {e}\n{traceback.format_exc()}')
         sys.exit(1)
 
 
