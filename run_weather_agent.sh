@@ -27,4 +27,4 @@ A2A_PORT=${A2A_PORT:-10110}
 AGENT_CARD="$ROOT_DIR/agent_cards/weather_agent.json"
 
 echo "Starting WeatherAgent on $A2A_HOST:$A2A_PORT with card $AGENT_CARD"
-uv run --env-file .env src/a2a_mcp/agents/ --agent-card "$AGENT_CARD" --port "$A2A_PORT"
+uv run --env-file .env python -m a2a_mcp.agents --host "$A2A_HOST" --port "$A2A_PORT" --agent-card "$AGENT_CARD"
