@@ -65,49 +65,54 @@ class A2AToolFactory:
         rpc_url = base_url.rstrip("/") 
 
         async def tool_call(user_text: str):
-            # Use A2A SDK's expected method name and params
-            payloads = [
-                {
-                    "jsonrpc": "2.0",
-                    "id": "1",
-                    "method": "message/send",
-                    "params": {
-                        "message": {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": user_text}
-                            ]
-                        },
-                        "stream": False
+            # First try the strict schema required by your A2A SDK (requires messageId and parts)
+            payload_send = {
+                "jsonrpc": "2.0",
+                "id": "1",
+                "method": "message/send",
+                "params": {
+                    "message": {
+                        "messageId": "client-1",
+                        "role": "user",
+                        "parts": [
+                            {"type": "text", "text": user_text}
+                        ]
                     },
+                    "stream": False
                 },
-                {
-                    "jsonrpc": "2.0",
-                    "id": "1",
-                    "method": "message",
-                    "params": {
-                        "message": {"content": {"type": "text", "text": user_text}}
-                    },
+            }
+            # Legacy fallback used by some older handlers
+            payload_legacy = {
+                "jsonrpc": "2.0",
+                "id": "1",
+                "method": "message",
+                "params": {
+                    "message": {"content": {"type": "text", "text": user_text}}
                 },
-            ]
+            }
+
             last_error = None
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
-                    for payload in payloads:
+                    for payload in (payload_send, payload_legacy):
                         try:
                             logger.info(f"Trying A2A call to {rpc_url} with method={payload['method']}")
                             r = await client.post(rpc_url, json=payload)
                             r.raise_for_status()
                             result = r.json()
-                            if result.get("error", {}).get("code") == -32601:
-                                # Try next method shape
-                                last_error = result
-                                logger.warning(f"Method not found for {payload['method']}, trying fallback...")
-                                continue
+                            # If JSON-RPC error present, decide whether to fallback
+                            if isinstance(result, dict) and result.get("error"):
+                                code = result["error"].get("code")
+                                # -32601: Method not found -> try next payload
+                                # -32602: Invalid params -> try next payload
+                                if code in (-32601, -32602):
+                                    last_error = result
+                                    logger.warning(f"A2A error code {code} for {payload['method']}, trying fallback if available...")
+                                    continue
                             logger.info(f"Agent response: {result}")
                             return result
                         except httpx.HTTPStatusError as he:
-                            last_error = {"error": f"HTTP {he.response.status_code}: {he.response.text}"}
+                            last_error = {"error": {"code": he.response.status_code, "message": he.response.text}}
                             logger.error(f"HTTP error calling agent: {last_error}")
                             break
             except httpx.ConnectError:
