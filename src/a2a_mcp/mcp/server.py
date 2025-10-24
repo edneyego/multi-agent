@@ -168,7 +168,7 @@ def serve(host, port, transport):  # noqa: PLR0915
     # 3) Start HTTP facade as standalone FastAPI on port+1
     http_app = FastAPI(title='MCP HTTP Facade')
 
-    @http_app.post('/http/tools/call')
+    @http_app.post('/mcp/tools/call')
     def http_call_tool(body: dict):
         name = body.get('name')
         arguments = body.get('arguments', {})
@@ -180,11 +180,11 @@ def serve(host, port, transport):  # noqa: PLR0915
             return {'content': [{ 'text': json.dumps(query_travel_data(**arguments)) }]}
         raise HTTPException(status_code=404, detail='Unknown tool')
 
-    @http_app.get('/http/resources/list')
+    @http_app.get('/mcp/resources/list')
     def http_list_resources():
         return {'contents': [{ 'text': json.dumps({'agent_cards': df['card_uri'].to_list()}) }]}
 
-    @http_app.get('/http/resources/{card_name}')
+    @http_app.get('/mcp/resources/{card_name}')
     def http_get_resource(card_name: str):
         data = (
             df.loc[

@@ -5,7 +5,8 @@
   "url": "http://localhost:10110/",
   "capabilities": {
     "streaming": true,
-    "push_notifications": true
+    "pushNotifications": true,
+    "stateTransitionHistory": false
   },
   "defaultInputModes": ["text", "text/plain"],
   "defaultOutputModes": ["text", "text/plain"],
@@ -20,8 +21,5 @@
         "weather in London"
       ]
     }
-  ],
-  "endpoints": {
-    "rpc": "/a2a"
-  }
+  ]
 }

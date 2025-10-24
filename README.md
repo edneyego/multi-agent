@@ -29,7 +29,7 @@ uv run --env-file .env a2a-mcp --run mcp-server --transport sse
 ```bash
 ./run_weather_agent.sh
 # Card: http://localhost:10110/.well-known/agent.json
-# RPC : http://localhost:10110/a2a
+# RPC : http://localhost:10110
 ```
 
 3) Suba o Orquestrador LangGraph

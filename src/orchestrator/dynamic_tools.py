@@ -24,7 +24,7 @@ class A2AToolFactory:
         base_url = (agent_card.get("url") or "").strip()
         if not (base_url.startswith("http://") or base_url.startswith("https://")):
             raise ValueError(f"Invalid agent card url: {base_url}")
-        rpc_url = base_url.rstrip("/") + "/a2a"
+        rpc_url = base_url.rstrip("/") 
 
         async def tool_call(user_text: str):
             payload = {

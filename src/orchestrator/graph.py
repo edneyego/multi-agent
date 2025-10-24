@@ -15,7 +15,7 @@ class OrchestratorState(BaseModel):
 
 
 class Orchestrator:
-    def __init__(self, mcp_host: str = "localhost", mcp_port: int = 10100):
+    def __init__(self, mcp_host: str = "localhost", mcp_port: int = 10101):
         self.registry = MCPRegistry(mcp_host, mcp_port)
         self.tool_factory = A2AToolFactory()
         self.graph = self._build()
