@@ -123,36 +123,13 @@ def main(host, port, agent_card):
 
         logger.info(f'Starting server on {host}:{port}')
         
-        # Configure uvicorn logging to be less verbose
-        uvicorn_log_config = {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "default": {
-                    "format": "%(levelprefix)s %(message)s",
-                    "use_colors": True,
-                },
-            },
-            "handlers": {
-                "default": {
-                    "formatter": "default",
-                    "class": "logging.StreamHandler",
-                    "stream": "ext://sys.stdout",
-                },
-            },
-            "root": {
-                "level": "INFO",
-                "handlers": ["default"],
-            },
-        }
-        
-        # Start the server
+        # Start the server with simple configuration to avoid logging issues
         uvicorn.run(
             server.build(), 
             host=host, 
             port=port,
-            log_config=uvicorn_log_config,
-            access_log=True
+            log_level="info",
+            access_log=False  # Disable access log to avoid format issues
         )
         
     except FileNotFoundError as e:
