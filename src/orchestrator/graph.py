@@ -24,13 +24,24 @@ class Orchestrator:
         g = StateGraph(OrchestratorState)
 
         async def find_agent_node(state: OrchestratorState):
-            card = await self.registry.find_agent_simple(state.text)
-            return {"agent_card": card}
+            try:
+                card = await self.registry.find_agent_simple(state.text)
+                return {"agent_card": card}
+            except Exception as e:
+                print(f"Error finding agent: {e}")
+                return {"agent_card": None}
 
         async def call_agent_node(state: OrchestratorState):
-            tool = self.tool_factory.create_tool_for_card(state.agent_card)
-            output = await tool(state.text)
-            return {"agent_output": output}
+            try:
+                if state.agent_card is None:
+                    return {"agent_output": {"error": "No agent found for this query"}}
+                
+                tool = self.tool_factory.create_tool_for_card(state.agent_card)
+                output = await tool(state.text)
+                return {"agent_output": output}
+            except Exception as e:
+                print(f"Error calling agent: {e}")
+                return {"agent_output": {"error": f"Error calling agent: {str(e)}"}}
 
         g.add_node("find_agent", find_agent_node)
         g.add_node("call_agent", call_agent_node)
@@ -40,6 +51,13 @@ class Orchestrator:
         return g.compile()
 
     async def run(self, text: str):
-        init = OrchestratorState(text=text)
-        result = await self.graph.ainvoke(init)
-        return result.agent_output
+        try:
+            init = OrchestratorState(text=text)
+            result = await self.graph.ainvoke(init)
+            
+            # LangGraph returns a dictionary, not an object with attributes
+            # Access the agent_output key from the result dictionary
+            return result.get("agent_output", {"error": "No output from agent"})
+        except Exception as e:
+            print(f"Error in orchestrator run: {e}")
+            return {"error": f"Orchestrator error: {str(e)}"}
