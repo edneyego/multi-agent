@@ -1,65 +1,131 @@
 # Sistema Multi-Agente: LangGraph + MCP
 
-> 🎯 **Branch `feature/mcpagent`** - Arquitetura simplificada usando apenas LangGraph + MCP
+> ✅ **Versão 2.0** - Arquitetura simplificada usando **APENAS** LangGraph + MCP  
+> ❌ **A2A completamente removido** - Sem código, dependências ou menções
 
-Uma implementação prática de sistema multi-agente utilizando **LangGraph** para orquestração e **FastMCP** para acesso centralizado a ferramentas.
+Uma implementação profissional de sistema multi-agente utilizando **LangGraph** para orquestração e **FastMCP** para acesso centralizado a ferramentas.
 
-## 🎆 Arquitetura Simplificada
+## 🎯 Arquitetura
 
-Esta branch implementa uma arquitetura mais simples e eficiente, eliminando completamente qualquer vestígio do protocolo A2A:
+```
+┌─────────────┐
+│   Usuário   │
+└──────┬──────┘
+       │ Query
+       ▼
+┌─────────────────────────────────┐
+│  Orquestrador (LangGraph)       │
+│  - Padrão Supervisor            │
+│  - Roteamento inteligente       │
+│  - Gerenciamento de estado      │
+└────────┬────────────────────────┘
+         │
+         ▼ Seleciona agente
+┌─────────────────────────────────┐
+│  Agentes Especializados         │
+│  - WeatherAgent                 │
+│  - TravelAgent                  │
+│  - PlannerAgent                 │
+└────────┬────────────────────────┘
+         │
+         ▼ Conecta via MCP
+┌─────────────────────────────────┐
+│  MCP Server (FastMCP)           │
+│  - Ferramentas de clima         │
+│  - Ferramentas de BD            │
+│  - Ferramentas de viagem        │
+└─────────────────────────────────┘
+```
 
-✅ **LangGraph** - Orquestração de agentes com padrão Supervisor  
-✅ **FastMCP puro** - Servidor centralizado de ferramentas  
-✅ **Arquitetura limpa** - Sem protocolos redundantes  
-✅ **Fácil manutenção** - Código simplificado  
-✅ **Alta performance** - Menos overhead de comunicação  
+## 🚀 Status da Refatoração
 
-## Diagrama de Arquitetura
+✅ **Concluído**: Remoção completa do código A2A  
+✅ **Concluído**: Implementação da estrutura base  
+✅ **Concluído**: Agentes especializados (Weather, Travel, Planner)  
+✅ **Concluído**: Cliente MCP  
+⏳ **Em andamento**: Implementação do MCP Server e ferramentas  
+⏳ **Em andamento**: Supervisor LangGraph completo  
 
-![Arquitetura](https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/a10399ee7bf597230685b991b56cf8d1/d789bb19-3a0e-43d9-969c-a6a6269a4b67/059b4cc6.png)
+## 📚 Estrutura do Projeto
 
-## Justificativa da Arquitetura
+```
+src/
+├── mcp_server/              # Servidor MCP centralizado
+│   ├── server.py           # FastMCP server
+│   └── tools/
+│       ├── weather_tools.py   # Ferramentas clima
+│       ├── database_tools.py  # Ferramentas BD  
+│       └── travel_tools.py    # Ferramentas viagem
+│
+├── agents/                 # Agentes especializados
+│   ├── base_agent.py      # ✅ Classe base
+│   ├── weather_agent.py   # ✅ Agente clima
+│   ├── travel_agent.py    # ✅ Agente viagens
+│   └── planner_agent.py   # ✅ Agente planejador
+│
+├── orchestrator/          # Orquestrador LangGraph
+│   ├── supervisor.py      # ⏳ Lógica do supervisor
+│   ├── state.py           # ✅ Estado compartilhado
+│   └── mcp_client.py      # ✅ Cliente MCP
+│
+└── cli.py                 # Interface CLI
+```
 
-A arquitetura foi totalmente refatorada para **remover qualquer menção, dependência ou integração do protocolo A2A**.
-O conceito central agora é a orquestração de múltiplos agentes via LangGraph, com todos os agentes acessando ferramentas centralizadas exclusivamente via FastMCP/MCP Server. Isso garante máxima simplicidade, reusabilidade e facilidade de manutenção:
+## 🔧 Próximos Passos
 
-- Não há nenhum código, dependência, ou menção a A2A em nenhum componente, documentação, agents ou scripts
-- O projeto orienta e exemplifica unicamente o workflow LangGraph → Agentes → MCP
-- A seção de vantagens enfatiza a ausência de protocolos redundantes e a evolução em relação à arquitetura original
+### Para Desenvolvedores
 
-## Arquitetura Detalhada
+1. **Implementar MCP Server completo**
+   - ✅ Estrutura criada
+   - ⏳ Implementar `weather_tools.py` (veja arquivo fornecido)
+   - ⏳ Implementar `database_tools.py` (veja arquivo fornecido)
+   - ⏳ Implementar `server.py` principal
 
-(manter seção detalhada já presente -- sem mencionar, referenciar ou sugerir A2A)
+2. **Implementar Supervisor LangGraph**
+   - ✅ Estado definido (`state.py`)
+   - ⏳ Implementar lógica completa (veja arquivo `supervisor.py` fornecido)
 
-## Fluxo de Execução
+3. **Testar sistema completo**
+   ```bash
+   # Terminal 1: MCP Server
+   python src/mcp_server/server.py
+   
+   # Terminal 2: Teste agentes
+   python -c "import asyncio; from src.agents.weather_agent import WeatherAgent; asyncio.run(WeatherAgent().execute('clima em São Paulo'))"
+   ```
 
-(manter seção já presente -- sem mencionar, referenciar ou sugerir A2A)
+## 🎯 Benefícios da Nova Arquitetura
 
-## Comparação: Antes vs Depois
-
-| Aspecto | Arquitetura Anterior | Nova Arquitetura |
-|---------|---------------------|------------------|
-| **Protocolos** | LangGraph + MCP + A2A | LangGraph + MCP |
+| Aspecto | Antes (A2A + MCP) | Depois (LangGraph + MCP) |
+|---------|-------------------|------------------------|
+| **Protocolos** | 2 protocolos | 1 protocolo |
 | **Complexidade** | Alta | Média |
 | **Performance** | Boa | Excelente |
-| **Manutenção** | Complexa | Simples |
-| **Agentes** | 3 agentes | 4 agentes |
-| **Ferramentas** | Distribuídas | Centralizadas (MCP) |
-| **Comunicação** | A2A + MCP | Apenas MCP |
-| **Overhead** | Múltiplos protocolos | Protocolo único |
+| **Manutenibilidade** | Difícil | Fácil |
+| **Testabilidade** | Complexa | Simples |
 
-## Desenvolvimento
+## 📝 Arquivos de Referência
 
-(manter seção já presente -- sem mencionar, referenciar ou sugerir A2A)
+Os seguintes arquivos foram criados como referência para completar a implementação:
 
-## Troubleshooting/Testing/Guia de contribuição/FAQ
+1. `refactoring-plan.md` - Plano completo de refatoração
+2. `mcp-server-main.py` - Servidor MCP completo
+3. `weather-tools.py` - Ferramentas de clima
+4. `database-tools.py` - Ferramentas de banco de dados
+5. `supervisor.py` - Supervisor LangGraph completo
 
-(manter igual, mas sem frases relacionadas a A2A)
+Copie o conteúdo destes arquivos para as pastas corretas para completar a implementação.
+
+## 👍 Contribuindo
+
+Contribuições são bem-vindas! Por favor:
+
+1. Fork o projeto
+2. Crie uma branch: `git checkout -b feature/nova-feature`
+3. Commit suas mudanças: `git commit -m 'Add nova feature'`
+4. Push para a branch: `git push origin feature/nova-feature`
+5. Abra um Pull Request
 
 ---
 
-## 🎉 Sobre esta Implementação
-
-A partir desta branch (feature/mcpagent), o projeto não contém qualquer interface, biblioteca, endpoint, ferramenta, agente ou código relacionado com Agent-to-Agent Protocol. Todo o workflow, exemplos, dicas e documentação seguem a nova filosofia orientada a FastMCP/MCP Server e LangGraph apenas.
-
-**Resultado**: Um sistema multi-agente profissional, eficiente, leve e pronto para produção! 🚀
+**Desenvolvido com ❤️ usando LangGraph + MCP (SEM A2A!)**

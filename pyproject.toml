@@ -1,29 +1,24 @@
 [project]
-name = "multiagent-mcp"
-version = "0.1.0"
-description = "Multi-Agent system using LangGraph and MCP only (A2A entirely removed)"
+name = "multiagent-langgraph-mcp"
+version = "2.0.0"
+description = "Multi-Agent system using LangGraph + MCP (A2A completely removed)"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
-    "click>=8.1.8",
     "fastmcp>=1.0",
-    "google-cloud-aiplatform>=1.91.0",
-    "google-generativeai>=0.8.5",
-    "httpx>=0.28.1",
-    "langchain-google-genai>=2.0.10",
-    "langchain-mcp-adapters>=0.0.9",
-    "langgraph>=0.4.1",
     "mcp[cli]>=1.5.0",
-    "nest-asyncio>=1.6.0",
-    "networkx>=3.4.2",
-    "numpy>=2.2.5",
-    "pandas>=2.2.3",
-    "pydantic>=2.11.4",
-    "litellm"
+    "langgraph>=0.4.1",
+    "langchain-core>=0.3.0",
+    "langchain-google-genai>=2.0.10",
+    "httpx>=0.28.0",
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "pydantic>=2.11.0",
+    "python-dotenv>=1.0.0"
 ]
 
 [project.scripts]
-multiagent-mcp = "src.orchestrator.main:main"
+multi-agent = "src.cli:cli"
 
 [build-system]
 requires = ["hatchling"]
