@@ -1,14 +1,12 @@
 [project]
-name = "a2a-mcp"
+name = "multiagent-mcp"
 version = "0.1.0"
-description = "A2A - MCP Sample"
+description = "Multi-Agent system using LangGraph and MCP only (A2A entirely removed)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "a2a-sdk[sql]>=0.3.7",
     "click>=8.1.8",
     "fastmcp>=1.0",
-    "google-adk>=1.0.0",
     "google-cloud-aiplatform>=1.91.0",
     "google-generativeai>=0.8.5",
     "httpx>=0.28.1",
@@ -21,11 +19,11 @@ dependencies = [
     "numpy>=2.2.5",
     "pandas>=2.2.3",
     "pydantic>=2.11.4",
-    "litellm",
+    "litellm"
 ]
 
 [project.scripts]
-a2a-mcp = "a2a_mcp:main"
+multiagent-mcp = "src.orchestrator.main:main"
 
 [build-system]
 requires = ["hatchling"]
